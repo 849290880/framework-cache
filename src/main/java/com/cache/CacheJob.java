@@ -55,7 +55,7 @@ public class CacheJob {
                 refreshTask.add(refreshCache);
                 ScheduledFuture<?> scheduledFuture = threadPoolTaskScheduler.scheduleAtFixedRate(() -> {
                     try {
-                        log.info("开始刷新,任务名称为:{}", refreshCache.getRefreshKey());
+                        log.debug("开始刷新,任务名称为:{}", refreshCache.getRefreshKey());
                         refreshCache.refresh();
                     } catch (Exception e) {
                         log.error("刷新失败", e);
@@ -92,15 +92,15 @@ public class CacheJob {
 //    @Scheduled(cron = "#{cronConfig.cronExpression}")
     @Scheduled(cron = "0/10 * * * * *")
     public void refreshCacheToRedis(){
-        log.info("开始刷新缓存");
+        log.debug("开始刷新缓存");
         Collection<RefreshCache> refreshCacheList = refreshCacheMap.values();
-        log.info("缓存任务数量:{},正在执行的任务:{}",refreshCacheList.size(),refreshTask.size());
+        log.debug("缓存任务数量:{},正在执行的任务:{}",refreshCacheList.size(),refreshTask.size());
         //启动任务
         startRefreshCache();
         //按规则清除任务
         removeRefreshCache();
 
-        log.info("刷新缓存结束");
+        log.debug("刷新缓存结束");
     }
 
     private static void removeRefreshCache() {
@@ -114,7 +114,7 @@ public class CacheJob {
             // 12小时的毫秒数：12 * 60 * 60 * 1000 = 43200000
             // 30秒： 1000 * 30 = 30000
             if (time >= TimeUnit.SECONDS.toMillis(refreshCache.getTtl())) {
-                log.info("长时间缓存没有命中,清除该任务,任务名称为:{}",refreshCache.getRefreshKey());
+                log.debug("长时间缓存没有命中,清除该任务,任务名称为:{}",refreshCache.getRefreshKey());
                 refreshCache.cancel();
                 refreshTask.remove(refreshCache);
                 return true;
@@ -130,7 +130,7 @@ public class CacheJob {
             while (saveQueue.size() > 30) {
                 RefreshCache poll = saveQueue.poll();
                 //请求中断线程
-                log.info("缓存任务过多,清除该任务,任务名称为:{}",refreshCache.getRefreshKey());
+                log.debug("缓存任务过多,清除该任务,任务名称为:{}",refreshCache.getRefreshKey());
                 refreshTask.remove(poll);
                 refreshCache.cancel();
             }

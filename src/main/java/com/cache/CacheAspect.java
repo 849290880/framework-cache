@@ -65,13 +65,11 @@ public class CacheAspect {
             }
         }
 
-        if(cacheParam != null){
-            originalParam = DeepCopy.copy(cacheParam);
-            Object o = ReflectUtil.invoke(cacheProcessor, "returnCacheResult", cacheParam,simpleCache,method);
-            if(o != null){
-                log.info("命中缓存");
-                return o;
-            }
+        originalParam = cacheParam == null ? null : DeepCopy.copy(cacheParam);
+        Object o = ReflectUtil.invoke(cacheProcessor, "returnCacheResult", originalParam,simpleCache,method);
+        if(o != null){
+            log.info("命中缓存");
+            return o;
         }
 
         // 在这里，你可以使用 key 来查找缓存。如果缓存存在，返回缓存的结果。
@@ -81,10 +79,8 @@ public class CacheAspect {
         Object result = point.proceed();
 
         // 存储结果到缓存
-        if(cacheParam != null){
-            ReflectUtil.invoke(cacheProcessor, "putCacheResult", originalParam,
-                    result,point.getTarget(),method,simpleCache);
-        }
+        ReflectUtil.invoke(cacheProcessor, "putCacheResult", originalParam,
+                result,point.getTarget(),method,simpleCache);
 
         return result;
     }

@@ -17,6 +17,7 @@ public class CacheConfig {
     }
 
     @Bean(name = "cacheTemplate")
+    @ConditionalOnMissingBean
     public RedisTemplate<String, Object> cacheTemplate(RedisConnectionFactory factory) {
         RedisTemplate<String, Object> redisTemplate = new RedisTemplate<>();
         redisTemplate.setConnectionFactory(factory);

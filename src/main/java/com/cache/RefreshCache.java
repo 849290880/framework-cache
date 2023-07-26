@@ -109,7 +109,7 @@ public class RefreshCache {
         return lastHitTime;
     }
 
-    public synchronized void saveLastHitTime(){
+    public void saveLastHitTime(){
         lastHitTime = System.currentTimeMillis();
     }
 
@@ -222,7 +222,11 @@ public class RefreshCache {
             freshCache = true;
             Object result = null;
             try {
-                result = this.method.invoke(targetObject, paramObject);
+                if(paramObject == null){
+                    result = this.method.invoke(targetObject);
+                }else {
+                    result = this.method.invoke(targetObject, paramObject);
+                }
             } catch (IllegalAccessException | InvocationTargetException e) {
                 throw new RuntimeException(e);
             }
