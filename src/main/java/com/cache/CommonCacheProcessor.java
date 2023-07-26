@@ -51,7 +51,7 @@ public class CommonCacheProcessor<Request,Response> extends CacheProcessorAbstra
         RefreshCache refreshCache = new RefreshCache(method, targetObject, request,
                 key, this,
                 annotation.cron(),(int)annotation.fixTime(),
-                System.currentTimeMillis(), annotation.cacheTime(),annotation.timeUnit());
+                System.currentTimeMillis(), annotation.cacheTime(),annotation.timeUnit(),annotation.ttlTime());
         CacheJob.refreshCacheMap.put(key,refreshCache);
     }
 

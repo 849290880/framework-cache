@@ -54,6 +54,8 @@ public class RefreshCache {
 
     private ScheduledFuture scheduledFuture;
 
+    private long ttl;
+
     public RefreshCache(){
 
     }
@@ -64,7 +66,7 @@ public class RefreshCache {
                         Object paramObject, String refreshKey,
                         CacheProcessor<?, ?> cacheProcessor, String cron,
                         Integer fixTime, long currentTime,
-                        long cacheTime, TimeUnit timeUnit) {
+                        long cacheTime, TimeUnit timeUnit,long ttl) {
         this.method = method;
         this.targetObject = targetObject;
         this.paramObject = paramObject;
@@ -76,6 +78,7 @@ public class RefreshCache {
         this.lastHitTime = new Date().getTime();
         this.cacheTime = cacheTime;
         this.timeUnit = timeUnit;
+        this.ttl = ttl;
     }
 
     public TimeUnit getTimeUnit() {
@@ -140,6 +143,14 @@ public class RefreshCache {
 
     public void setParamObject(Object paramObject) {
         this.paramObject = paramObject;
+    }
+
+    public long getTtl() {
+        return ttl;
+    }
+
+    public void setTtl(long ttl) {
+        this.ttl = ttl;
     }
 
     @Override

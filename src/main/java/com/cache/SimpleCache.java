@@ -42,5 +42,11 @@ public @interface SimpleCache {
      */
     long fixTime() default 5L;
 
+    /**
+     * 判断多少时间命中缓存就终止定时任务,单位为秒
+     * @return
+     */
+    long ttlTime() default 3600L;
+
 
 }

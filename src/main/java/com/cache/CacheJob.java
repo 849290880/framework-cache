@@ -113,7 +113,7 @@ public class CacheJob {
             long time = System.currentTimeMillis() - lastHitTime;
             // 12小时的毫秒数：12 * 60 * 60 * 1000 = 43200000
             // 30秒： 1000 * 30 = 30000
-            if (time >= 30000) {
+            if (time >= TimeUnit.SECONDS.toMillis(refreshCache.getTtl())) {
                 log.info("长时间缓存没有命中,清除该任务,任务名称为:{}",refreshCache.getRefreshKey());
                 refreshCache.cancel();
                 refreshTask.remove(refreshCache);
