@@ -131,23 +131,8 @@ public class CacheInitialAnnotationBeanPostProcessor implements BeanPostProcesso
     private void initJob() {
         for (CacheInitialProcessorAbstract initialProcessor : cacheInitialProcessorList) {
             initialProcessor.initCacheTool(redisTemplate);
-            threadPoolTaskScheduler.schedule(new Runnable() {
-                @Override
-                public void run() {
-                    Object param = initialProcessor.initialRequestParam();
-                    Object result = null;
-                    try {
-                        if(param == null){
-                            result = initialProcessor.getMethod().invoke(initialProcessor.getBean());
-                        }else {
-                            result = initialProcessor.getMethod().invoke(initialProcessor.getBean(), param);
-                        }
-                    } catch (IllegalAccessException | InvocationTargetException e) {
-                        throw new RuntimeException(e);
-                    }
-                    initialProcessor.saveToCache(result);
-                }
-            },new CronTrigger(initialProcessor.getCacheInitial().cron()));
+            initialProcessor.initThreadPool(threadPoolTaskScheduler);
+            initialProcessor.refresh();
         }
     }
 
