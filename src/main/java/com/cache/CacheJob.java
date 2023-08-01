@@ -9,6 +9,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Predicate;
@@ -32,7 +33,8 @@ public class CacheJob {
 
     private static final ThreadPoolTaskScheduler threadPoolTaskScheduler = new ThreadPoolTaskScheduler();
 
-    static {
+    @PostConstruct
+    public void init(){
         threadPoolTaskScheduler.setPoolSize(1);
         threadPoolTaskScheduler.setThreadNamePrefix("cacheTask");
         threadPoolTaskScheduler.initialize();
@@ -99,7 +101,6 @@ public class CacheJob {
         startRefreshCache();
         //按规则清除任务
         removeRefreshCache();
-
         log.debug("刷新缓存结束");
     }
 
