@@ -10,6 +10,7 @@ import org.springframework.core.task.TaskExecutor;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
+import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.annotation.ScheduledAnnotationBeanPostProcessor;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
@@ -31,8 +32,8 @@ public class CacheConfig {
     }
 
     @Bean(name = "cacheScheduler")
-    @ConditionalOnMissingBean
-    public ThreadPoolTaskScheduler threadPoolTaskScheduler(){
+    @ConditionalOnMissingBean(name = "cacheScheduler")
+    public TaskScheduler threadPoolTaskScheduler(){
         ThreadPoolTaskScheduler threadPoolTaskScheduler = new ThreadPoolTaskScheduler();
         threadPoolTaskScheduler.setPoolSize(3);
         threadPoolTaskScheduler.setThreadNamePrefix("init-cache-job");
@@ -42,7 +43,7 @@ public class CacheConfig {
     }
 
     @Bean(name = "cacheTemplate")
-    @ConditionalOnMissingBean
+    @ConditionalOnMissingBean(name = "cacheTemplate")
     public RedisTemplate<String, Object> cacheTemplate(RedisConnectionFactory factory) {
         RedisTemplate<String, Object> redisTemplate = new RedisTemplate<>();
         redisTemplate.setConnectionFactory(factory);

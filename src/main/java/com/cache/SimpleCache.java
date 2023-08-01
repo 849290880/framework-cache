@@ -49,4 +49,10 @@ public @interface SimpleCache {
     long ttlTime() default 3600L;
 
 
+    /**
+     * 没有命中缓存时候，是否调用计算结果放入缓存的方法
+     * @return
+     */
+    boolean putToCache() default true;
+
 }

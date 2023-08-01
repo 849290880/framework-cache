@@ -79,8 +79,10 @@ public class CacheAspect {
         Object result = point.proceed();
 
         // 存储结果到缓存
-        ReflectUtil.invoke(cacheProcessor, "putCacheResult", originalParam,
-                result,point.getTarget(),method,simpleCache);
+        if (simpleCache.putToCache()) {
+            ReflectUtil.invoke(cacheProcessor, "putCacheResult", originalParam,
+                    result,point.getTarget(),method,simpleCache);
+        }
 
         return result;
     }

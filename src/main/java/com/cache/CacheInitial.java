@@ -14,6 +14,12 @@ public @interface CacheInitial {
 
     Class<? extends CacheInitialProcessorAbstract> clazz() default CacheInitialProcessorAbstract.class;
 
-
     String cron() default "0/10 * * * * *";
+
+    /**
+     * 如果定义了切面，使用该属性调用原来的没有切面的方法
+     * @return
+     */
+    boolean proxy() default true;
+
 }

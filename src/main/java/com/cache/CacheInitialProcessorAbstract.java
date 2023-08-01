@@ -18,10 +18,13 @@ public abstract class CacheInitialProcessorAbstract<Request,Response> {
     protected Object bean;
     protected ThreadPoolTaskScheduler threadPoolTaskScheduler;
 
+    protected volatile boolean initFlag;
+
     public void init(CacheInitial cacheInitial, Method method, Object bean){
         this.cacheInitial = cacheInitial;
         this.method = method;
         this.bean = bean;
+        this.initFlag = false;
     }
     public abstract Request initialRequestParam();
 
@@ -67,5 +70,5 @@ public abstract class CacheInitialProcessorAbstract<Request,Response> {
         },new CronTrigger(getCacheInitial().cron()));
     }
 
-    //    public abstract void timeToSaveCache(Request param, Method method, Object bean);
+
 }

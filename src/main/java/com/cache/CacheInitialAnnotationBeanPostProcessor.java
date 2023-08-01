@@ -2,8 +2,10 @@ package com.cache;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.aop.framework.Advised;
 import org.springframework.aop.framework.AopInfrastructureBean;
 import org.springframework.aop.framework.AopProxyUtils;
+import org.springframework.aop.support.AopUtils;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.BeanFactoryAware;
@@ -111,7 +113,21 @@ public class CacheInitialAnnotationBeanPostProcessor implements BeanPostProcesso
         CacheInitialProcessorAbstract cacheInitialProcessorAbstract = null;
         try {
             cacheInitialProcessorAbstract = clazz.newInstance();
-            cacheInitialProcessorAbstract.init(cacheInitial,method,bean);
+            //如果注解上确定这个bean是否走切面增强等逻辑
+            Object target = bean;
+            if (cacheInitial.proxy()) {
+                cacheInitialProcessorAbstract.init(cacheInitial,method,target);
+            }else {
+                try {
+                    if (AopUtils.isAopProxy(target) && target instanceof Advised) {
+                        target = ((Advised) target).getTargetSource().getTarget();
+                    }
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+                cacheInitialProcessorAbstract.init(cacheInitial,method,target);
+            }
+
         } catch (InstantiationException | IllegalAccessException e) {
             throw new RuntimeException(e);
         }
