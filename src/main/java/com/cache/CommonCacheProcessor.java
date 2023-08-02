@@ -12,9 +12,11 @@ public class CommonCacheProcessor<Request,Response> extends CacheProcessorAbstra
     @Override
     public Response returnCacheResult(Request request,SimpleCache annotation,Method targetMethod) {
 
+        //这里扩展点为 paramKeyByRequest方法的重写,根据不同的参数定义不同的缓存key
         String finalKey = generateKey(request, annotation, targetMethod);
 
-        Response json = (Response)redisTemplate.opsForValue().get(finalKey);
+        //这里扩展点为
+        Response json = returnResult(finalKey);
 
         //记录缓存任务中最后缓存命中的时间
         RefreshCache refreshCache = CacheJob.refreshCacheMap.get(finalKey);
@@ -26,8 +28,19 @@ public class CommonCacheProcessor<Request,Response> extends CacheProcessorAbstra
         return json;
     }
 
-    private String generateKey(Request request, SimpleCache annotation, Method targetMethod) {
+
+    public Response returnResult(String finalKey) {
+        return (Response)redisTemplate.opsForValue().get(finalKey);
+    }
+
+    @Override
+    public String generateKey(Request request, SimpleCache annotation, Method targetMethod) {
         String prefixKey = annotation.prefixKey();
+        return generateCacheKey(request, targetMethod, prefixKey);
+    }
+
+    @Override
+    public String generateCacheKey(Request request, Method targetMethod, String prefixKey) {
         if(StringUtils.isEmpty(prefixKey)){
             prefixKey = COMMON_CACHE_KEY;
         }
@@ -75,10 +88,10 @@ public class CommonCacheProcessor<Request,Response> extends CacheProcessorAbstra
         return jsonString;
     }
 
+    @Override
     public String paramKeyByRequest(Request request) {
         String requestString = JSON.toJSONString(request);
-        String easyReadRedisData = requestString.replace(":", "$");
-        return easyReadRedisData;
+        return requestString.replace(":", "$");
     }
 
 

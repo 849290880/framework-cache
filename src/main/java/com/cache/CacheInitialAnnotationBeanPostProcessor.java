@@ -50,7 +50,7 @@ public class CacheInitialAnnotationBeanPostProcessor implements BeanPostProcesso
 
     private ApplicationContext applicationContext;
 
-    private List<CacheInitialProcessorAbstract> cacheInitialProcessorList = new CopyOnWriteArrayList<>();
+    private List<CacheInitialProcessor> cacheInitialProcessorList = new CopyOnWriteArrayList<>();
 
 
     @Override
@@ -97,7 +97,7 @@ public class CacheInitialAnnotationBeanPostProcessor implements BeanPostProcesso
             }else {
                 //处理带有注解的bean
                 annotatedMethods.forEach((method, cacheInitialMethods) ->
-                        cacheInitialMethods.forEach(scheduled -> processCacheInitial(scheduled, method, bean)));
+                        cacheInitialMethods.forEach(cacheInitial -> processCacheInitial(cacheInitial, method, bean)));
                 if (logger.isTraceEnabled()) {
                     logger.trace(annotatedMethods.size() + " @CacheInitial methods processed on bean '" + beanName +
                             "': " + annotatedMethods);
@@ -109,8 +109,8 @@ public class CacheInitialAnnotationBeanPostProcessor implements BeanPostProcesso
 
     private void processCacheInitial(CacheInitial cacheInitial, Method method, Object bean) {
         logger.info("bean名称:{},方法名称:{}",bean,method.getDeclaringClass());
-        Class<? extends CacheInitialProcessorAbstract> clazz = cacheInitial.clazz();
-        CacheInitialProcessorAbstract cacheInitialProcessorAbstract = null;
+        Class<? extends CacheInitialProcessor> clazz = cacheInitial.clazz();
+        CacheInitialProcessor cacheInitialProcessorAbstract = null;
         try {
             cacheInitialProcessorAbstract = clazz.newInstance();
             //如果注解上确定这个bean是否走切面增强等逻辑
@@ -145,7 +145,7 @@ public class CacheInitialAnnotationBeanPostProcessor implements BeanPostProcesso
     }
 
     private void initJob() {
-        for (CacheInitialProcessorAbstract initialProcessor : cacheInitialProcessorList) {
+        for (CacheInitialProcessor initialProcessor : cacheInitialProcessorList) {
             initialProcessor.initCacheTool(redisTemplate);
             initialProcessor.initThreadPool(threadPoolTaskScheduler);
             initialProcessor.refresh();

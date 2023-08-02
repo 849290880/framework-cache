@@ -15,8 +15,8 @@ public interface CacheProcessor<Request,Response>{
 
     void removeCache(String key);
 
-    default void buildCacheProvide(Object cacheProvide){
+    void buildCacheProvide(Object cacheProvide);
 
-    }
+    String paramKeyByRequest(Request request);
 
 }

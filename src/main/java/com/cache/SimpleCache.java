@@ -8,7 +8,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * 用于做简单的缓存功能
  */
-@Target({ElementType.METHOD})
+@Target({ElementType.METHOD,ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 @Component

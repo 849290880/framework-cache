@@ -6,6 +6,7 @@ import org.springframework.scheduling.support.CronTrigger;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.concurrent.TimeUnit;
 
 public abstract class CacheInitialProcessorAbstract<Request,Response> {
 
@@ -28,7 +29,8 @@ public abstract class CacheInitialProcessorAbstract<Request,Response> {
     }
     public abstract Request initialRequestParam();
 
-    public abstract void saveToCache(Response result);
+    public abstract void saveToCache(Request request, Response result, long time,
+                                     TimeUnit timeUnit,Method method,String prefix);
 
     public void initCacheTool(RedisTemplate redisTemplate){
         this.redisTemplate = redisTemplate;
@@ -54,18 +56,19 @@ public abstract class CacheInitialProcessorAbstract<Request,Response> {
         threadPoolTaskScheduler.schedule(new Runnable() {
             @Override
             public void run() {
-                Object param = initialRequestParam();
+                Object request = initialRequestParam();
                 Object result = null;
                 try {
-                    if(param == null){
+                    if(request == null){
                         result = method.invoke(bean);
                     }else {
-                        result = method.invoke(bean, param);
+                        result = method.invoke(bean, request);
                     }
                 } catch (IllegalAccessException | InvocationTargetException e) {
                     throw new RuntimeException(e);
                 }
-                saveToCache((Response) result);
+                saveToCache((Request) request,(Response) result,
+                        cacheInitial.cacheTime(),cacheInitial.timeUnit(),method,cacheInitial.prefixKey());
             }
         },new CronTrigger(getCacheInitial().cron()));
     }

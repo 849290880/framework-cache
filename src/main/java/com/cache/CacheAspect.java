@@ -9,6 +9,8 @@ import org.aspectj.lang.reflect.MethodSignature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.annotation.AnnotatedElementUtils;
+import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
@@ -29,7 +31,7 @@ public class CacheAspect {
         this.cacheTemplate = cacheTemplate;
     }
 
-    @Pointcut("@annotation(com.cache.SimpleCache)")
+    @Pointcut("@annotation(com.cache.SimpleCache) || @annotation(com.cache.SimpleCacheInitial)")
     public void cachePointcut() {
 
     }
@@ -39,8 +41,9 @@ public class CacheAspect {
         MethodSignature signature = (MethodSignature) point.getSignature();
         Method method = signature.getMethod();
 
-        //实例化缓存处理逻辑类
-        SimpleCache simpleCache = method.getAnnotation(SimpleCache.class);
+        //实例化缓存处理逻辑类,使用spring工具类合得到合并的注解
+        SimpleCache simpleCache = AnnotatedElementUtils.findMergedAnnotation(method, SimpleCache.class);
+
         Class<?> clazz = simpleCache.clazz();
         CacheProcessor cacheProcessor = (CacheProcessor) clazz.getDeclaredConstructor().newInstance();
         //当这里的缓存需要使用不同的框架时候处理成使用不同的换工具
