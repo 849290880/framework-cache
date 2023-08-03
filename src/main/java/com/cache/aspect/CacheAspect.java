@@ -1,6 +1,11 @@
-package com.cache;
+package com.cache.aspect;
 
 import cn.hutool.core.util.ReflectUtil;
+import com.cache.annotation.CacheParam;
+import com.cache.CacheProcessor;
+import com.cache.DeepCopy;
+import com.cache.EventPublisher;
+import com.cache.annotation.SimpleCache;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -8,13 +13,9 @@ import org.aspectj.lang.annotation.Pointcut;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.annotation.AnnotatedElementUtils;
-import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.stereotype.Component;
 
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 
@@ -27,11 +28,14 @@ public class CacheAspect {
 //    @Autowired
     private final RedisTemplate<String,Object> cacheTemplate;
 
-    public CacheAspect(RedisTemplate<String,Object> cacheTemplate){
+    private final EventPublisher eventPublisher;
+
+    public CacheAspect(RedisTemplate<String,Object> cacheTemplate,EventPublisher eventPublisher){
         this.cacheTemplate = cacheTemplate;
+        this.eventPublisher = eventPublisher;
     }
 
-    @Pointcut("@annotation(com.cache.SimpleCache) || @annotation(com.cache.SimpleCacheInitial)")
+    @Pointcut("@annotation(com.cache.annotation.SimpleCache) || @annotation(com.cache.annotation.SimpleCacheInitial)")
     public void cachePointcut() {
 
     }
@@ -48,6 +52,7 @@ public class CacheAspect {
         CacheProcessor cacheProcessor = (CacheProcessor) clazz.getDeclaredConstructor().newInstance();
         //当这里的缓存需要使用不同的框架时候处理成使用不同的换工具
         cacheProcessor.buildCacheProvide(cacheTemplate);
+        cacheProcessor.buildEventPublisher(eventPublisher);
 
         Object[] args = point.getArgs();
         Parameter[] parameters = method.getParameters();

@@ -1,5 +1,6 @@
 package com.cache;
 
+import com.cache.annotation.SimpleCache;
 import org.springframework.data.redis.core.RedisTemplate;
 
 import java.lang.reflect.Method;
@@ -8,9 +9,17 @@ public abstract class CacheProcessorAbstract<Request,Response> implements CacheP
 
     protected RedisTemplate<String, Object> redisTemplate;
 
+
+    protected EventPublisher eventPublisher;
+
     @Override
     public void buildCacheProvide(Object cacheProvide){
         redisTemplate = (RedisTemplate<String, Object>) cacheProvide;
+    }
+
+    @Override
+    public void buildEventPublisher(EventPublisher eventPublisher){
+        this.eventPublisher = eventPublisher;
     }
 
     public RedisTemplate<String, Object> getRedisTemplate() {

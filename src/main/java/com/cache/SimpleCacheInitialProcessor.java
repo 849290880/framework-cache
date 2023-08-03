@@ -1,7 +1,7 @@
 package com.cache;
 
+import com.cache.annotation.SimpleCache;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 
 import java.lang.reflect.Method;
 import java.util.concurrent.TimeUnit;
@@ -38,6 +38,11 @@ public class SimpleCacheInitialProcessor<Request,Response> extends CacheInitialP
     }
 
     @Override
+    public void buildEventPublisher(EventPublisher eventPublisher) {
+        this.cacheProcessorAbstract.buildEventPublisher(eventPublisher);
+    }
+
+    @Override
     public void removeCache(String key) {
         cacheProcessorAbstract.removeCache(key);
     }
@@ -51,6 +56,7 @@ public class SimpleCacheInitialProcessor<Request,Response> extends CacheInitialP
             cacheProcessorAbstract.buildCacheProvide(cacheProvide);
         }
     }
+
 
 
     /**

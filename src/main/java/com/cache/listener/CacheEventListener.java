@@ -1,32 +1,32 @@
-package com.cache;
+package com.cache.listener;
 
+import com.cache.CronConfig;
+import com.cache.RefreshCache;
+import com.cache.event.AddJobEvent;
+import com.cache.event.RefreshJobEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.scheduling.support.CronTrigger;
-import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.function.Predicate;
-import java.util.function.ToIntFunction;
-import java.util.stream.Collectors;
 
 /**
  * 统计服务有比较多的首页报表，其中的的结果都需要复杂计算，
  * 本类将结果统计放入redis缓存中，注意缓存结果的key不能过大
  */
-public class CacheJob {
+public class CacheEventListener {
 
-    private static final Logger log = LoggerFactory.getLogger(CacheJob.class);
+    private static final Logger log = LoggerFactory.getLogger(CacheEventListener.class);
 
-    public final static Map<String,RefreshCache> refreshCacheMap = new ConcurrentHashMap<>();
+    public final Map<String,RefreshCache> refreshCacheMap = new ConcurrentHashMap<>();
 
-    private static final List<RefreshCache> refreshTask = new CopyOnWriteArrayList<>();
+    private final List<RefreshCache> refreshTask = new CopyOnWriteArrayList<>();
 
     @Autowired
     private CronConfig cronConfig;
@@ -38,6 +38,28 @@ public class CacheJob {
         threadPoolTaskScheduler.setPoolSize(1);
         threadPoolTaskScheduler.setThreadNamePrefix("cacheTask");
         threadPoolTaskScheduler.initialize();
+    }
+
+    @EventListener
+    public void handleAddJobEvent(AddJobEvent event) {
+        //防止添加多个任务
+        if(refreshCacheMap.containsKey(event.getJobKey())){
+            return;
+        }
+        refreshCacheMap.put(event.getJobKey(),event.getRefreshCache());
+        log.debug("开启一个缓存任务,任务id:{}",event.getJobKey());
+        //启动任务
+        startRefreshCache();
+    }
+
+    @EventListener
+    public void handleRefreshJobEvent(RefreshJobEvent event) {
+        RefreshCache refreshCache = refreshCacheMap.get(event.getJobKey());
+        if(refreshCache!=null){
+            //记录缓存任务中最后缓存命中的时间
+            refreshCache.getCacheCount().incrementAndGet();
+            refreshCache.saveLastHitTime();
+        }
     }
 
 
@@ -86,27 +108,19 @@ public class CacheJob {
     }
 
 
-    /**
-     * 统计服务的定时任务为 59 0/1 * * *
-     * 一分钟调用，将结果进行缓存
-     */
 //    @Scheduled(cron = "0 0/2 * * * *")
 //    @Scheduled(cron = "#{cronConfig.cronExpression}")
     @Scheduled(cron = "0/10 * * * * *")
     public void refreshCacheToRedis(){
-        log.debug("开始刷新缓存");
+        log.debug("开始清理缓存任务");
         Collection<RefreshCache> refreshCacheList = refreshCacheMap.values();
         log.debug("缓存任务数量:{},正在执行的任务:{}",refreshCacheList.size(),refreshTask.size());
-        //启动任务
-        startRefreshCache();
         //按规则清除任务
         removeRefreshCache();
-        log.debug("刷新缓存结束");
+        log.debug("清理缓存任务结束");
     }
 
-    private static void removeRefreshCache() {
-
-
+    private void removeRefreshCache() {
         //清除超时间没有命中缓存的任务
         refreshCacheMap.keySet().removeIf(key -> {
             RefreshCache refreshCache = refreshCacheMap.get(key);
@@ -150,7 +164,7 @@ public class CacheJob {
     }
 
 
-    public static void removeRefreshTask(RefreshCache refreshCache){
+    public void removeRefreshTask(RefreshCache refreshCache){
         refreshCacheMap.keySet().removeIf(key -> {
             RefreshCache cache = refreshCacheMap.get(key);
             if (Objects.equals(refreshCache, cache)) {

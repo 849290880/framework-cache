@@ -8,7 +8,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.concurrent.TimeUnit;
 
-public abstract class CacheInitialProcessorAbstract<Request,Response> {
+public abstract class CacheInitialProcessorAbstract<Request,Response> implements CacheInitialProcessor<Request,Response>{
 
     protected RedisTemplate<String, Object> redisTemplate;
 

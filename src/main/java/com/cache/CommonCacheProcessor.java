@@ -1,6 +1,7 @@
 package com.cache;
 
 import com.alibaba.fastjson.JSON;
+import com.cache.annotation.SimpleCache;
 import org.springframework.util.StringUtils;
 
 import java.lang.reflect.Method;
@@ -10,20 +11,25 @@ public class CommonCacheProcessor<Request,Response> extends CacheProcessorAbstra
 
     public final static String COMMON_CACHE_KEY = "COMMON_CACHE_KEY";
     @Override
-    public Response returnCacheResult(Request request,SimpleCache annotation,Method targetMethod) {
+    public Response returnCacheResult(Request request, SimpleCache annotation, Method targetMethod) {
 
         //这里扩展点为 paramKeyByRequest方法的重写,根据不同的参数定义不同的缓存key
-        String finalKey = generateKey(request, annotation, targetMethod);
+        String cacheKey = generateKey(request, annotation, targetMethod);
 
         //这里扩展点为
-        Response json = returnResult(finalKey);
+        Response json = returnResult(cacheKey);
 
-        //记录缓存任务中最后缓存命中的时间
-        RefreshCache refreshCache = CacheJob.refreshCacheMap.get(finalKey);
-        if(annotation.addToJob() && refreshCache!=null){
-            refreshCache.getCacheCount().incrementAndGet();
-            refreshCache.saveLastHitTime();
+        //发布缓存任务事件
+        if(annotation.addToJob()){
+            eventPublisher.publishRefreshJobEvent(cacheKey);
         }
+
+//        //记录缓存任务中最后缓存命中的时间
+//        RefreshCache refreshCache = CacheJob.refreshCacheMap.get(finalKey);
+//        if(annotation.addToJob() && refreshCache!=null){
+//            refreshCache.getCacheCount().incrementAndGet();
+//            refreshCache.saveLastHitTime();
+//        }
 
         return json;
     }
@@ -65,7 +71,11 @@ public class CommonCacheProcessor<Request,Response> extends CacheProcessorAbstra
                 key, this,
                 annotation.cron(),(int)annotation.fixTime(),
                 System.currentTimeMillis(), annotation.cacheTime(),annotation.timeUnit(),annotation.ttlTime());
-        CacheJob.refreshCacheMap.put(key,refreshCache);
+
+        //发布缓存刷新任务
+        eventPublisher.publishAddJobEvent(refreshCache,key);
+
+//        CacheJob.refreshCacheMap.put(key,refreshCache);
     }
 
     @Override

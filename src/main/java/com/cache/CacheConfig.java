@@ -1,20 +1,16 @@
 package com.cache;
 
+import com.cache.aspect.CacheAspect;
+import com.cache.listener.CacheEventListener;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Role;
-import org.springframework.core.task.TaskExecutor;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 import org.springframework.scheduling.TaskScheduler;
-import org.springframework.scheduling.annotation.ScheduledAnnotationBeanPostProcessor;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
-import org.springframework.scheduling.config.TaskManagementConfigUtils;
 
 import java.util.concurrent.ThreadPoolExecutor;
 
@@ -60,8 +56,16 @@ public class CacheConfig {
 
     @Bean
     @ConditionalOnMissingBean
-    public CacheAspect cacheAspect(@Qualifier("cacheTemplate") RedisTemplate<String,Object> cacheTemplate){
-        return new CacheAspect(cacheTemplate);
+    public EventPublisher eventPublisher(){
+        return new EventPublisher();
+    }
+
+
+    @Bean
+    @ConditionalOnMissingBean
+    public CacheAspect cacheAspect(@Qualifier("cacheTemplate") RedisTemplate<String,Object> cacheTemplate,
+                                   EventPublisher eventPublisher){
+        return new CacheAspect(cacheTemplate,eventPublisher);
     }
 
     @Value("${my.cron.expression:*/5 * * * * *}")
@@ -75,8 +79,8 @@ public class CacheConfig {
 
     @Bean
     @ConditionalOnMissingBean
-    public CacheJob cacheJob(){
-        return new CacheJob();
+    public CacheEventListener cacheJob(){
+        return new CacheEventListener();
     }
 
 
