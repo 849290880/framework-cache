@@ -1,6 +1,5 @@
 package com.cache.annotation;
 
-import com.cache.CacheInitial;
 import com.cache.SimpleCacheInitialProcessor;
 
 import java.lang.annotation.*;
@@ -31,4 +30,10 @@ public @interface SimpleCacheInitial {
      * 缓存时间单位
      */
     TimeUnit timeUnit() default TimeUnit.MINUTES;
+
+    /**
+     * 初始化前删除以前的key
+     * @return
+     */
+    boolean deletePreviousKey() default false;
 }

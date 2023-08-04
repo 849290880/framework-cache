@@ -1,7 +1,5 @@
 package com.cache.annotation;
 
-import com.cache.CacheInitial;
-
 import java.lang.annotation.*;
 
 @Target({ElementType.METHOD})

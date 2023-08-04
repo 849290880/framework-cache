@@ -89,6 +89,12 @@ public class SimpleCacheInitialProcessor<Request,Response> extends CacheInitialP
         redisTemplate.opsForValue().set(cacheKey,result,time,timeUnit);
     }
 
+    @Override
+    public void deleteCache(Request request,Method targetMethod,String prefix) {
+        String cacheKey = cacheProcessorAbstract.generateCacheKey(request,targetMethod,prefix);
+        redisTemplate.delete(cacheKey);
+    }
+
     /**
      * 刷新缓存的方法
      */

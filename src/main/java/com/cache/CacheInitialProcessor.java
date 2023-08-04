@@ -1,5 +1,6 @@
 package com.cache;
 
+import com.cache.annotation.CacheInitial;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 

@@ -1,6 +1,7 @@
-package com.cache;
+package com.cache.annotation;
 
 
+import com.cache.CacheInitialProcessor;
 import com.cache.annotation.CacheInitials;
 
 import java.lang.annotation.*;
@@ -36,5 +37,11 @@ public @interface CacheInitial {
     TimeUnit timeUnit() default TimeUnit.MINUTES;
 
     String prefixKey() default "";
+
+    /**
+     * 初始化前删除以前的key
+     * @return
+     */
+    boolean deletePreviousKey() default false;
 
 }

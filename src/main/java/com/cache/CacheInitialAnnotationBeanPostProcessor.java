@@ -1,5 +1,6 @@
 package com.cache;
 
+import com.cache.annotation.CacheInitial;
 import com.cache.annotation.CacheInitials;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -104,7 +105,9 @@ public class CacheInitialAnnotationBeanPostProcessor implements BeanPostProcesso
     }
 
     private void processCacheInitial(CacheInitial cacheInitial, Method method, Object bean) {
-        logger.info("bean名称:{},方法名称:{}",bean,method.getDeclaringClass());
+        if(logger.isTraceEnabled()){
+            logger.trace("bean名称:{},方法名称:{}",bean,method.getDeclaringClass());
+        }
         Class<? extends CacheInitialProcessor> clazz = cacheInitial.clazz();
         CacheInitialProcessor cacheInitialProcessorAbstract = null;
         try {
