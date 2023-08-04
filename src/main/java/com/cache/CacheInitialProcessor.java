@@ -6,7 +6,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 
 import java.lang.reflect.Method;
 
-public interface CacheInitialProcessor<Request,Response> {
+public interface CacheInitialProcessor<Request,Response>{
 
     void init(CacheInitial cacheInitial, Method method, Object target);
 
@@ -16,4 +16,7 @@ public interface CacheInitialProcessor<Request,Response> {
 
     void refresh();
 
+    void initPublisher(EventPublisher eventPublisher);
+
+    void init();
 }

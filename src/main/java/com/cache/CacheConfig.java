@@ -32,7 +32,7 @@ public class CacheConfig {
     public TaskScheduler threadPoolTaskScheduler(){
         ThreadPoolTaskScheduler threadPoolTaskScheduler = new ThreadPoolTaskScheduler();
         threadPoolTaskScheduler.setPoolSize(3);
-        threadPoolTaskScheduler.setThreadNamePrefix("init-cache-job");
+        threadPoolTaskScheduler.setThreadNamePrefix("x-cache-task");
         threadPoolTaskScheduler.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
         threadPoolTaskScheduler.initialize();
         return threadPoolTaskScheduler;
@@ -54,7 +54,7 @@ public class CacheConfig {
         return redisTemplate;
     }
 
-    @Bean
+    @Bean(name = "eventPublisher")
     @ConditionalOnMissingBean
     public EventPublisher eventPublisher(){
         return new EventPublisher();

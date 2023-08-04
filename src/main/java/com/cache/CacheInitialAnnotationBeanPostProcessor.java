@@ -41,11 +41,15 @@ public class CacheInitialAnnotationBeanPostProcessor implements BeanPostProcesso
 
     public static final String CACHE_TEMPLATE = "cacheTemplate";
 
+    public static final String EVENT_PUBLISHER = "eventPublisher";
+
     private RedisTemplate<String, Object> redisTemplate;
 
     private BeanFactory beanFactory;
 
     private ApplicationContext applicationContext;
+
+    private EventPublisher eventPublisher;
 
     private List<CacheInitialProcessor> cacheInitialProcessorList = new CopyOnWriteArrayList<>();
 
@@ -147,6 +151,8 @@ public class CacheInitialAnnotationBeanPostProcessor implements BeanPostProcesso
         for (CacheInitialProcessor initialProcessor : cacheInitialProcessorList) {
             initialProcessor.initCacheTool(redisTemplate);
             initialProcessor.initThreadPool(threadPoolTaskScheduler);
+            initialProcessor.initPublisher(eventPublisher);
+            initialProcessor.init();
             initialProcessor.refresh();
         }
     }
@@ -154,6 +160,7 @@ public class CacheInitialAnnotationBeanPostProcessor implements BeanPostProcesso
     private void finishRegisterBean() {
         this.threadPoolTaskScheduler = resolveBean(this.beanFactory, ThreadPoolTaskScheduler.class,DEFAULT_CACHE_JOB_BEAN_NAME);
         this.redisTemplate = resolveBean(this.beanFactory,RedisTemplate.class,CACHE_TEMPLATE);
+        this.eventPublisher = resolveBean(this.beanFactory, EventPublisher.class,EVENT_PUBLISHER);
     }
 
     private <T> T resolveBean(BeanFactory beanFactory, Class<T> threadPoolTaskSchedulerType,String name) {

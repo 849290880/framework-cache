@@ -9,7 +9,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.concurrent.TimeUnit;
 
-public abstract class CacheInitialProcessorAbstract<Request,Response> implements CacheInitialProcessor<Request,Response>{
+public abstract class CacheInitialProcessorAbstract<Request,Response> implements CacheInitialProcessor<Request,Response>,CacheProcessor<Request,Response>{
 
     protected RedisTemplate<String, Object> redisTemplate;
 
@@ -22,6 +22,11 @@ public abstract class CacheInitialProcessorAbstract<Request,Response> implements
 
     protected volatile boolean initFlag;
 
+    protected Request request;
+
+    protected String key;
+
+    protected EventPublisher eventPublisher;
 
     @Override
     public void init(CacheInitial cacheInitial, Method method, Object bean){
@@ -30,10 +35,29 @@ public abstract class CacheInitialProcessorAbstract<Request,Response> implements
         this.bean = bean;
         this.initFlag = true;
     }
+
+    @Override
+    public void init() {
+        this.request = initialRequestParam();
+        this.key = initialKey();
+    }
+
     public abstract Request initialRequestParam();
 
+    public abstract String initialKey();
+
+    @Override
+    public void removeCache(String key) {
+
+    }
+
+    @Override
+    public void putToCache(Request request, Response result, String key, long timeout, TimeUnit timeUnit) {
+        saveToCache(request,result,timeout,timeUnit,method, cacheInitial.prefixKey());
+    }
+
     public abstract void saveToCache(Request request, Response result, long time,
-                                     TimeUnit timeUnit,Method method,String prefix);
+                                     TimeUnit timeUnit, Method method, String prefix);
 
     public void deleteCache(Request request,Method method,String prefixKey){
 
@@ -62,33 +86,48 @@ public abstract class CacheInitialProcessorAbstract<Request,Response> implements
     }
 
     @Override
-    public void refresh() {
-        threadPoolTaskScheduler.schedule(new Runnable() {
-            @Override
-            public void run() {
-                Object request = initialRequestParam();
-                //启动删除原来缓存的数据
-                if (cacheInitial.deletePreviousKey() && initFlag) {
-                    synchronized (this){
-                        deleteCache((Request) request,method,cacheInitial.prefixKey());
-                        initFlag = false;
-                    }
-                }
+    public void initPublisher(EventPublisher eventPublisher) {
+        this.eventPublisher = eventPublisher;
+    }
 
-                Object result = null;
-                try {
-                    if(request == null){
-                        result = method.invoke(bean);
-                    }else {
-                        result = method.invoke(bean, request);
-                    }
-                } catch (IllegalAccessException | InvocationTargetException e) {
-                    throw new RuntimeException(e);
-                }
-                saveToCache((Request) request,(Response) result,
-                        cacheInitial.cacheTime(),cacheInitial.timeUnit(),method,cacheInitial.prefixKey());
-            }
-        },new CronTrigger(getCacheInitial().cron()));
+    @Override
+    public void refresh() {
+
+        //发布定时缓存任务
+        RefreshCache refreshCache = new RefreshCache(method, bean, request,
+                key, this,
+                cacheInitial.cron(),(int)cacheInitial.fixTime(),
+                System.currentTimeMillis(), cacheInitial.cacheTime(),cacheInitial.timeUnit(),cacheInitial.ttlTime());
+
+        //发布缓存刷新任务
+        eventPublisher.publishAddJobEvent(refreshCache,key);
+
+//        threadPoolTaskScheduler.schedule(new Runnable() {
+//            @Override
+//            public void run() {
+//                Object request = initialRequestParam();
+//                //启动删除原来缓存的数据
+//                if (cacheInitial.deletePreviousKey() && initFlag) {
+//                    synchronized (this){
+//                        deleteCache((Request) request,method,cacheInitial.prefixKey());
+//                        initFlag = false;
+//                    }
+//                }
+//
+//                Object result = null;
+//                try {
+//                    if(request == null){
+//                        result = method.invoke(bean);
+//                    }else {
+//                        result = method.invoke(bean, request);
+//                    }
+//                } catch (IllegalAccessException | InvocationTargetException e) {
+//                    throw new RuntimeException(e);
+//                }
+//                saveToCache((Request) request,(Response) result,
+//                        cacheInitial.cacheTime(),cacheInitial.timeUnit(),method,cacheInitial.prefixKey());
+//            }
+//        },new CronTrigger(getCacheInitial().cron()));
     }
 
 

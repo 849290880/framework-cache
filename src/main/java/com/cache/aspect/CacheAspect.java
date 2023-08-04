@@ -2,7 +2,7 @@ package com.cache.aspect;
 
 import cn.hutool.core.util.ReflectUtil;
 import com.cache.annotation.CacheParam;
-import com.cache.CacheProcessor;
+import com.cache.SimpleCacheProcessor;
 import com.cache.DeepCopy;
 import com.cache.EventPublisher;
 import com.cache.annotation.SimpleCache;
@@ -49,7 +49,7 @@ public class CacheAspect {
         SimpleCache simpleCache = AnnotatedElementUtils.findMergedAnnotation(method, SimpleCache.class);
 
         Class<?> clazz = simpleCache.clazz();
-        CacheProcessor cacheProcessor = (CacheProcessor) clazz.getDeclaredConstructor().newInstance();
+        SimpleCacheProcessor cacheProcessor = (SimpleCacheProcessor) clazz.getDeclaredConstructor().newInstance();
         //当这里的缓存需要使用不同的框架时候处理成使用不同的换工具
         cacheProcessor.buildCacheProvide(cacheTemplate);
         cacheProcessor.buildEventPublisher(eventPublisher);
@@ -74,7 +74,8 @@ public class CacheAspect {
         }
 
         originalParam = cacheParam == null ? null : DeepCopy.copy(cacheParam);
-        Object o = ReflectUtil.invoke(cacheProcessor, "returnCacheResult", originalParam,simpleCache,method);
+        Object o = cacheProcessor.returnCacheResult(originalParam,simpleCache,method);
+//        Object o = ReflectUtil.invoke(cacheProcessor, "returnCacheResult", originalParam,simpleCache,method);
         if(o != null){
             log.info("命中缓存");
             return o;
@@ -88,8 +89,9 @@ public class CacheAspect {
 
         // 存储结果到缓存
         if (simpleCache.putToCache()) {
-            ReflectUtil.invoke(cacheProcessor, "putCacheResult", originalParam,
-                    result,point.getTarget(),method,simpleCache);
+            cacheProcessor.putCacheResult(originalParam,result,point.getTarget(),method,simpleCache);
+//            ReflectUtil.invoke(cacheProcessor, "putCacheResult", originalParam,
+//                    result,point.getTarget(),method,simpleCache);
         }
 
         return result;

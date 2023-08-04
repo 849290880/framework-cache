@@ -39,6 +39,18 @@ public @interface CacheInitial {
     String prefixKey() default "";
 
     /**
+     * 判断多少时间命中缓存就终止定时任务,单位为秒
+     * @return
+     */
+    long ttlTime() default 3600L;
+
+    /**
+     * 默认位5秒,单位为秒
+     * @return
+     */
+    long fixTime() default 5L;
+
+    /**
      * 初始化前删除以前的key
      * @return
      */

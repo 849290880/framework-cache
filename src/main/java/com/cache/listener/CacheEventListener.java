@@ -7,12 +7,13 @@ import com.cache.event.RefreshJobEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.event.EventListener;
+import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.scheduling.support.CronTrigger;
 
-import javax.annotation.PostConstruct;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -31,14 +32,19 @@ public class CacheEventListener {
     @Autowired
     private CronConfig cronConfig;
 
-    private static final ThreadPoolTaskScheduler threadPoolTaskScheduler = new ThreadPoolTaskScheduler();
+    @Autowired
+    @Qualifier(value = "cacheScheduler")
+    private TaskScheduler cacheScheduler;
 
-    @PostConstruct
-    public void init(){
-        threadPoolTaskScheduler.setPoolSize(1);
-        threadPoolTaskScheduler.setThreadNamePrefix("cacheTask");
-        threadPoolTaskScheduler.initialize();
-    }
+
+//    private static final ThreadPoolTaskScheduler threadPoolTaskScheduler = new ThreadPoolTaskScheduler();
+//
+//    @PostConstruct
+//    public void init(){
+//        threadPoolTaskScheduler.setPoolSize(1);
+//        threadPoolTaskScheduler.setThreadNamePrefix("cacheTask");
+//        threadPoolTaskScheduler.initialize();
+//    }
 
     @EventListener
     public void handleAddJobEvent(AddJobEvent event) {
@@ -65,19 +71,27 @@ public class CacheEventListener {
 
     public void startRefreshCache(){
         Collection<RefreshCache> refreshCacheList = refreshCacheMap.values();
-        if(refreshCacheList.size() == 0){
-            threadPoolTaskScheduler.setPoolSize(1);
+
+        //控制线程数量 这里可以考虑使用动态线程池
+        ThreadPoolTaskScheduler threadPoolTaskScheduler = null;
+        if(cacheScheduler instanceof ThreadPoolTaskScheduler){
+            threadPoolTaskScheduler = (ThreadPoolTaskScheduler)cacheScheduler;
+            int size = refreshCacheList.size();
+            if( size == 0){
+                threadPoolTaskScheduler.setPoolSize(1);
+            }
+            if(size >=1){
+                threadPoolTaskScheduler.setPoolSize(Math.min(size, 30));
+            }
         }
-        if(refreshCacheList.size() >=1){
-            threadPoolTaskScheduler.setPoolSize(Math.min(refreshCacheList.size(), 30));
-        }
+
         for (RefreshCache refreshCache : refreshCacheList) {
             if(refreshTask.contains(refreshCache)){
                 continue;
             }
             if (refreshCache.isFix()) {
                 refreshTask.add(refreshCache);
-                ScheduledFuture<?> scheduledFuture = threadPoolTaskScheduler.scheduleAtFixedRate(() -> {
+                ScheduledFuture<?> scheduledFuture = cacheScheduler.scheduleAtFixedRate(() -> {
                     try {
                         log.debug("开始刷新,任务名称为:{}", refreshCache.getRefreshKey());
                         refreshCache.refresh();
@@ -93,7 +107,7 @@ public class CacheEventListener {
 
             if(refreshCache.isCronTask()){
                 refreshTask.add(refreshCache);
-                ScheduledFuture<?> scheduledFuture = threadPoolTaskScheduler.schedule(() -> {
+                ScheduledFuture<?> scheduledFuture = cacheScheduler.schedule(() -> {
                     try {
                         log.info("开始刷新,任务名称为:{}", refreshCache.getRefreshKey());
                         refreshCache.refresh();

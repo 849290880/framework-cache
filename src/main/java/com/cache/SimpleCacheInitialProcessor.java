@@ -11,35 +11,51 @@ import java.util.concurrent.TimeUnit;
  * @param <Request>
  * @param <Response>
  */
-public class SimpleCacheInitialProcessor<Request,Response> extends CacheInitialProcessorAbstract<Request,Response> implements CacheProcessor<Request,Response>,
-        CacheInitialProcessor<Request,Response>{
+public class SimpleCacheInitialProcessor<Request,Response> extends CacheInitialProcessorAbstract<Request,Response> implements SimpleCacheProcessor<Request,Response>{
 
     private final CacheProcessorAbstract<Request,Response> cacheProcessorAbstract;
 
-
     public SimpleCacheInitialProcessor(){
-        this.cacheProcessorAbstract = new CommonCacheProcessor<>();
+        cacheProcessorAbstract = new CommonCacheProcessor<>();
+    }
+
+    @Override
+    public void init() {
+        this.cacheProcessorAbstract.buildCacheProvide(this.redisTemplate);
+        this.cacheProcessorAbstract.buildEventPublisher(eventPublisher);
+        this.request = initialRequestParam();
+        this.key = initialKey();
     }
 
     @Override
     public Response returnCacheResult(Request request, SimpleCache annotation, Method targetMethod) {
-        String finalKey = cacheProcessorAbstract.generateKey(request, annotation, targetMethod);
-        return (Response) redisTemplate.opsForValue().get(finalKey);
+        String cacheKey = cacheProcessorAbstract.generateKey(request, annotation, targetMethod);
+
+        //发布缓存任务事件
+        if(annotation.addToJob()){
+            eventPublisher.publishRefreshJobEvent(cacheKey);
+        }
+
+        return (Response) redisTemplate.opsForValue().get(cacheKey);
     }
 
     @Override
-    public void putCacheResult(Request request, Object result, Object targetObject, Method targetMethod, SimpleCache simpleCache) {
+    public void putCacheResult(Request request, Response result, Object targetObject, Method targetMethod, SimpleCache simpleCache) {
         cacheProcessorAbstract.putCacheResult(request,result,targetObject,targetMethod,simpleCache);
     }
 
-    @Override
-    public void putToCache(Request request, Object result, String key, long timeout, TimeUnit timeUnit) {
-        cacheProcessorAbstract.putToCache(request,result,key,timeout,timeUnit);
-    }
 
     @Override
     public void buildEventPublisher(EventPublisher eventPublisher) {
+        if(this.eventPublisher == null){
+            this.eventPublisher = eventPublisher;
+        }
         this.cacheProcessorAbstract.buildEventPublisher(eventPublisher);
+    }
+
+    @Override
+    public void putToCache(Request request, Response result, String key, long timeout, TimeUnit timeUnit) {
+        cacheProcessorAbstract.putToCache(request,result,key,timeout,timeUnit);
     }
 
     @Override
@@ -78,6 +94,12 @@ public class SimpleCacheInitialProcessor<Request,Response> extends CacheInitialP
     public Request initialRequestParam() {
         return null;
     }
+
+    @Override
+    public String initialKey() {
+        return cacheProcessorAbstract.generateCacheKey(request,method,cacheInitial.prefixKey());
+    }
+
 
     /**
      * 将结果保存到缓存

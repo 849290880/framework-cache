@@ -34,6 +34,15 @@ public class CommonCacheProcessor<Request,Response> extends CacheProcessorAbstra
         return json;
     }
 
+    @Override
+    public void putCacheResult(Request request, Response result, Object targetObject, Method targetMethod, SimpleCache annotation) {
+        String key = generateKey(request, annotation, targetMethod);
+        if (annotation.addToJob()) {
+            addToCacheJob(request, targetObject, targetMethod,annotation,key);
+        }
+        putToCache(request,result,key,annotation.cacheTime(),annotation.timeUnit());
+    }
+
 
     public Response returnResult(String finalKey) {
         return (Response)redisTemplate.opsForValue().get(finalKey);
@@ -55,15 +64,15 @@ public class CommonCacheProcessor<Request,Response> extends CacheProcessorAbstra
         return prefixKey + ":" + queryKey;
     }
 
-    @Override
-    public void putCacheResult(Request request, Object result, Object targetObject,
-                               Method targetMethod,SimpleCache annotation) {
-        String key = generateKey(request, annotation, targetMethod);
-        if (annotation.addToJob()) {
-            addToCacheJob(request, targetObject, targetMethod,annotation,key);
-        }
-        putToCache(request,result,key,annotation.cacheTime(),annotation.timeUnit());
-    }
+//    @Override
+//    public void putCacheResult(Request request, Object result, Object targetObject,
+//                               Method targetMethod,SimpleCache annotation) {
+//        String key = generateKey(request, annotation, targetMethod);
+//        if (annotation.addToJob()) {
+//            addToCacheJob(request, targetObject, targetMethod,annotation,key);
+//        }
+//        putToCache(request,result,key,annotation.cacheTime(),annotation.timeUnit());
+//    }
 
     private void addToCacheJob(Request request, Object targetObject, Method method, SimpleCache annotation,String key) {
         //加入缓存定时任务
@@ -79,7 +88,7 @@ public class CommonCacheProcessor<Request,Response> extends CacheProcessorAbstra
     }
 
     @Override
-    public void putToCache(Request request, Object result,String key,long timeout,TimeUnit timeUnit) {
+    public void putToCache(Request request, Response result, String key, long timeout, TimeUnit timeUnit) {
         redisTemplate.opsForValue().set(key,result,timeout,timeUnit);
     }
 

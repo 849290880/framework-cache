@@ -1,6 +1,6 @@
 package com.cache.annotation;
 
-import com.cache.CacheProcessor;
+import com.cache.SimpleCacheProcessor;
 import com.cache.CommonCacheProcessor;
 import org.springframework.stereotype.Component;
 
@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit;
 public @interface SimpleCache {
 
 
-    Class<? extends CacheProcessor> clazz() default CommonCacheProcessor.class;
+    Class<? extends SimpleCacheProcessor> clazz() default CommonCacheProcessor.class;
 
     /**
      * 是否加入缓存任务

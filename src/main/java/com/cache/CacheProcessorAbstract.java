@@ -5,7 +5,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 
 import java.lang.reflect.Method;
 
-public abstract class CacheProcessorAbstract<Request,Response> implements CacheProcessor<Request,Response>{
+public abstract class CacheProcessorAbstract<Request,Response> implements SimpleCacheProcessor<Request,Response>,CacheProcessor<Request,Response> {
 
     protected RedisTemplate<String, Object> redisTemplate;
 

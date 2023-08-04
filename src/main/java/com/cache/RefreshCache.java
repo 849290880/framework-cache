@@ -2,7 +2,6 @@ package com.cache;
 
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
-import cn.hutool.core.util.ReflectUtil;
 import com.cronutils.model.Cron;
 import com.cronutils.model.CronType;
 import com.cronutils.model.definition.CronDefinition;
@@ -34,7 +33,7 @@ public class RefreshCache {
 
     private String refreshKey;
 
-    private CacheProcessor<?, ?> cacheProcessor;
+    private CacheProcessor cacheProcessor;
 
     private volatile boolean freshCache;
 
@@ -66,7 +65,7 @@ public class RefreshCache {
                         Object paramObject, String refreshKey,
                         CacheProcessor<?, ?> cacheProcessor, String cron,
                         Integer fixTime, long currentTime,
-                        long cacheTime, TimeUnit timeUnit,long ttl) {
+                        long cacheTime, TimeUnit timeUnit, long ttl) {
         this.method = method;
         this.targetObject = targetObject;
         this.paramObject = paramObject;
@@ -231,11 +230,10 @@ public class RefreshCache {
                 throw new RuntimeException(e);
             }
             //将结果放入缓存
-            ReflectUtil.invoke(cacheProcessor, "putToCache", paramObject, result,
-                    refreshKey,cacheTime,timeUnit);
+            cacheProcessor.putToCache(paramObject,result,refreshKey,cacheTime,timeUnit);
+//            ReflectUtil.invoke(cacheProcessor, "putToCache", paramObject, result,
+//                    refreshKey,cacheTime,timeUnit);
             freshCache = false;
-//            //更新刷新时间
-//            lastHitTime = System.currentTimeMillis();
             //更新上次刷新时间
             lastRefreshTime = System.currentTimeMillis();
         }

@@ -21,6 +21,8 @@ public @interface SimpleCacheInitial {
 
     String prefixKey() default "";
 
+    String cron() default "0/10 * * * * *";
+
     /**
      * 将结果缓存的时间
      */
@@ -36,4 +38,12 @@ public @interface SimpleCacheInitial {
      * @return
      */
     boolean deletePreviousKey() default false;
+
+    /**
+     * 判断多少时间命中缓存就终止定时任务,单位为秒
+     * @return
+     */
+    long ttlTime() default 3600L;
+
+    boolean addToJob() default false;
 }
