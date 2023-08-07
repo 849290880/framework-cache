@@ -30,7 +30,7 @@ public abstract class CacheProcessorAbstract<Request,Response> implements Simple
 
     public abstract String generateKey(Request request, SimpleCache annotation, Method targetMethod);
 
-    public abstract String generateCacheKey(Request request, Method targetMethod, String prefixKey, Function<Request,String> paramFunctionKey);
+    public abstract String generateCacheKey(Request request, Method targetMethod, String prefixKey, Function<Request,Request> paramFunctionKey);
 
     public abstract void publishJob(Request request, Response result, Object targetObject, Method targetMethod, SimpleCache annotation,String key);
 

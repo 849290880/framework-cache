@@ -104,7 +104,7 @@ public class SimpleCacheInitialProcessor<Request,Response> extends CacheInitialP
 
     @Override
     public String initialKey() {
-        Function<Request,String> paramFunctionKey = paramFunctionKey();
+        Function<Request,Request> paramFunctionKey = paramFunctionKey();
         return generateCacheKey(paramFunctionKey);
     }
 
@@ -113,15 +113,15 @@ public class SimpleCacheInitialProcessor<Request,Response> extends CacheInitialP
      * 定义参数生成的key
      * @return
      */
-    public Function<Request, String> paramFunctionKey() {
+    public Function<Request, Request> paramFunctionKey() {
         return null;
     }
 
-    public String generateCacheKey(Function<Request,String> paramFunctionKey){
+    public String generateCacheKey(Function<Request,Request> paramFunctionKey){
         return cacheProcessorAbstract.generateCacheKey(request,method,cacheInitial.prefixKey(),paramFunctionKey);
     }
 
-    public String generateCacheKey(Request request, Method targetMethod, String prefixKey, Function<Request,String> paramFunctionKey){
+    public String generateCacheKey(Request request, Method targetMethod, String prefixKey, Function<Request,Request> paramFunctionKey){
         return cacheProcessorAbstract.generateCacheKey(request,targetMethod,prefixKey,paramFunctionKey);
     }
 

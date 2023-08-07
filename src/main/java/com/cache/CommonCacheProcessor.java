@@ -54,7 +54,7 @@ public class CommonCacheProcessor<Request,Response> extends CacheProcessorAbstra
 
     @Override
     public String generateCacheKey(Request request, Method targetMethod, String prefixKey,
-                                   Function<Request,String> paramFunctionKey) {
+                                   Function<Request,Request> paramFunctionKey) {
         if(StringUtils.isEmpty(prefixKey)){
             prefixKey = COMMON_CACHE_KEY;
         }
@@ -85,11 +85,12 @@ public class CommonCacheProcessor<Request,Response> extends CacheProcessorAbstra
         redisTemplate.delete(key);
     }
 
-    public String paramKey(Method targetMethod, Request request, Function<Request,String> paramFunctionKey){
+    public String paramKey(Method targetMethod, Request request, Function<Request,Request> paramFunctionKey){
         //替换 : 为特殊符号
         String easyReadRedisData = null;
         if(paramFunctionKey != null){
-            easyReadRedisData = paramFunctionKey.apply(request);
+            Request changeRequest = paramFunctionKey.apply(request);
+            easyReadRedisData = paramKeyByRequest(changeRequest);
         }else {
             easyReadRedisData = paramKeyByRequest(request);
         }
