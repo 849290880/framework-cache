@@ -71,7 +71,7 @@ public class CacheEventListener {
                 threadPoolTaskScheduler.setPoolSize(1);
             }
             if(size >=1){
-                threadPoolTaskScheduler.setPoolSize(Math.min(size, 30));
+                threadPoolTaskScheduler.setPoolSize(Math.min(size, 16));
             }
         }
 

@@ -10,7 +10,7 @@ import java.util.function.Function;
 
 public class CommonCacheProcessor<Request,Response> extends CacheProcessorAbstract<Request,Response>{
 
-    public final static String COMMON_CACHE_KEY = "COMMON_CACHE_KEY";
+    public final static String COMMON_CACHE_KEY = "CACHE_KEY";
     @Override
     public Response returnCacheResult(Request request, SimpleCache annotation, Method targetMethod) {
 
