@@ -46,4 +46,10 @@ public @interface SimpleCacheInitial {
     long ttlTime() default 3600L;
 
     boolean addToJob() default false;
+
+    /**
+     * 是否解析该注解
+     * @return
+     */
+    boolean enableInitial() default true;
 }

@@ -102,32 +102,6 @@ public abstract class CacheInitialProcessorAbstract<Request,Response> implements
         //发布缓存刷新任务
         eventPublisher.publishAddJobEvent(refreshCache,key);
 
-//        threadPoolTaskScheduler.schedule(new Runnable() {
-//            @Override
-//            public void run() {
-//                Object request = initialRequestParam();
-//                //启动删除原来缓存的数据
-//                if (cacheInitial.deletePreviousKey() && initFlag) {
-//                    synchronized (this){
-//                        deleteCache((Request) request,method,cacheInitial.prefixKey());
-//                        initFlag = false;
-//                    }
-//                }
-//
-//                Object result = null;
-//                try {
-//                    if(request == null){
-//                        result = method.invoke(bean);
-//                    }else {
-//                        result = method.invoke(bean, request);
-//                    }
-//                } catch (IllegalAccessException | InvocationTargetException e) {
-//                    throw new RuntimeException(e);
-//                }
-//                saveToCache((Request) request,(Response) result,
-//                        cacheInitial.cacheTime(),cacheInitial.timeUnit(),method,cacheInitial.prefixKey());
-//            }
-//        },new CronTrigger(getCacheInitial().cron()));
     }
 
 

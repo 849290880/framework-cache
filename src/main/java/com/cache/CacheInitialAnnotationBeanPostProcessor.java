@@ -112,6 +112,9 @@ public class CacheInitialAnnotationBeanPostProcessor implements BeanPostProcesso
         if(logger.isTraceEnabled()){
             logger.trace("bean名称:{},方法名称:{}",bean,method.getDeclaringClass());
         }
+        if(!cacheInitial.enableInitial()){
+            return;
+        }
         Class<? extends CacheInitialProcessor> clazz = cacheInitial.clazz();
         CacheInitialProcessor cacheInitialProcessorAbstract = null;
         try {

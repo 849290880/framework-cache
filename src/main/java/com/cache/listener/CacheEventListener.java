@@ -36,16 +36,6 @@ public class CacheEventListener {
     @Qualifier(value = "cacheScheduler")
     private TaskScheduler cacheScheduler;
 
-
-//    private static final ThreadPoolTaskScheduler threadPoolTaskScheduler = new ThreadPoolTaskScheduler();
-//
-//    @PostConstruct
-//    public void init(){
-//        threadPoolTaskScheduler.setPoolSize(1);
-//        threadPoolTaskScheduler.setThreadNamePrefix("cacheTask");
-//        threadPoolTaskScheduler.initialize();
-//    }
-
     @EventListener
     public void handleAddJobEvent(AddJobEvent event) {
         //防止添加多个任务
@@ -109,7 +99,7 @@ public class CacheEventListener {
                 refreshTask.add(refreshCache);
                 ScheduledFuture<?> scheduledFuture = cacheScheduler.schedule(() -> {
                     try {
-                        log.info("开始刷新,任务名称为:{}", refreshCache.getRefreshKey());
+                        log.debug("开始刷新,任务名称为:{}", refreshCache.getRefreshKey());
                         refreshCache.refresh();
                     } catch (Exception e) {
                         removeRefreshTask(refreshCache);

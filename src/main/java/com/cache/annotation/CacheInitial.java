@@ -56,4 +56,10 @@ public @interface CacheInitial {
      */
     boolean deletePreviousKey() default false;
 
+    /**
+     * 是否解析该注解
+     * @return
+     */
+    boolean enableInitial() default true;
+
 }
