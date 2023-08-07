@@ -6,6 +6,7 @@ import org.springframework.util.StringUtils;
 
 import java.lang.reflect.Method;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 public class CommonCacheProcessor<Request,Response> extends CacheProcessorAbstract<Request,Response>{
 
@@ -24,25 +25,22 @@ public class CommonCacheProcessor<Request,Response> extends CacheProcessorAbstra
             eventPublisher.publishRefreshJobEvent(cacheKey);
         }
 
-//        //记录缓存任务中最后缓存命中的时间
-//        RefreshCache refreshCache = CacheJob.refreshCacheMap.get(finalKey);
-//        if(annotation.addToJob() && refreshCache!=null){
-//            refreshCache.getCacheCount().incrementAndGet();
-//            refreshCache.saveLastHitTime();
-//        }
-
         return json;
     }
 
     @Override
     public void putCacheResult(Request request, Response result, Object targetObject, Method targetMethod, SimpleCache annotation) {
         String key = generateKey(request, annotation, targetMethod);
+        publishJob(request,result,targetObject,targetMethod,annotation,key);
+    }
+
+    @Override
+    public void publishJob(Request request, Response result, Object targetObject, Method targetMethod, SimpleCache annotation, String key) {
         if (annotation.addToJob()) {
             addToCacheJob(request, targetObject, targetMethod,annotation,key);
         }
         putToCache(request,result,key,annotation.cacheTime(),annotation.timeUnit());
     }
-
 
     public Response returnResult(String finalKey) {
         return (Response)redisTemplate.opsForValue().get(finalKey);
@@ -51,30 +49,22 @@ public class CommonCacheProcessor<Request,Response> extends CacheProcessorAbstra
     @Override
     public String generateKey(Request request, SimpleCache annotation, Method targetMethod) {
         String prefixKey = annotation.prefixKey();
-        return generateCacheKey(request, targetMethod, prefixKey);
+        return generateCacheKey(request, targetMethod, prefixKey,null);
     }
 
     @Override
-    public String generateCacheKey(Request request, Method targetMethod, String prefixKey) {
+    public String generateCacheKey(Request request, Method targetMethod, String prefixKey,
+                                   Function<Request,String> paramFunctionKey) {
         if(StringUtils.isEmpty(prefixKey)){
             prefixKey = COMMON_CACHE_KEY;
         }
         //序列化request,将request的:替换
-        String queryKey = paramKey(targetMethod, request);
+        String queryKey = paramKey(targetMethod, request,paramFunctionKey);
         return prefixKey + ":" + queryKey;
     }
 
-//    @Override
-//    public void putCacheResult(Request request, Object result, Object targetObject,
-//                               Method targetMethod,SimpleCache annotation) {
-//        String key = generateKey(request, annotation, targetMethod);
-//        if (annotation.addToJob()) {
-//            addToCacheJob(request, targetObject, targetMethod,annotation,key);
-//        }
-//        putToCache(request,result,key,annotation.cacheTime(),annotation.timeUnit());
-//    }
 
-    private void addToCacheJob(Request request, Object targetObject, Method method, SimpleCache annotation,String key) {
+    public void addToCacheJob(Request request, Object targetObject, Method method, SimpleCache annotation,String key) {
         //加入缓存定时任务
         RefreshCache refreshCache = new RefreshCache(method, targetObject, request,
                 key, this,
@@ -83,8 +73,6 @@ public class CommonCacheProcessor<Request,Response> extends CacheProcessorAbstra
 
         //发布缓存刷新任务
         eventPublisher.publishAddJobEvent(refreshCache,key);
-
-//        CacheJob.refreshCacheMap.put(key,refreshCache);
     }
 
     @Override
@@ -97,9 +85,14 @@ public class CommonCacheProcessor<Request,Response> extends CacheProcessorAbstra
         redisTemplate.delete(key);
     }
 
-    private String paramKey(Method targetMethod, Request request){
+    public String paramKey(Method targetMethod, Request request, Function<Request,String> paramFunctionKey){
         //替换 : 为特殊符号
-        String easyReadRedisData = paramKeyByRequest(request);
+        String easyReadRedisData = null;
+        if(paramFunctionKey != null){
+            easyReadRedisData = paramFunctionKey.apply(request);
+        }else {
+            easyReadRedisData = paramKeyByRequest(request);
+        }
         String jsonString = targetMethod.getDeclaringClass() + "." +targetMethod.getName() + "#" + easyReadRedisData;
         if(StringUtils.isEmpty(jsonString)){
             throw new IllegalArgumentException("缓存参数错误");

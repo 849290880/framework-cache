@@ -5,6 +5,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 
 import java.lang.reflect.Method;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 /**
  * 使用组合的方法将两个注解的功能融合一起 @CacheInitial @SimpleCache
@@ -29,7 +30,7 @@ public class SimpleCacheInitialProcessor<Request,Response> extends CacheInitialP
 
     @Override
     public Response returnCacheResult(Request request, SimpleCache annotation, Method targetMethod) {
-        String cacheKey = cacheProcessorAbstract.generateKey(request, annotation, targetMethod);
+        String cacheKey = generateKey(request, annotation, targetMethod);
 
         //发布缓存任务事件
         if(annotation.addToJob()){
@@ -39,9 +40,15 @@ public class SimpleCacheInitialProcessor<Request,Response> extends CacheInitialP
         return (Response) redisTemplate.opsForValue().get(cacheKey);
     }
 
+    private String generateKey(Request request, SimpleCache annotation, Method targetMethod) {
+        String prefixKey = annotation.prefixKey();
+        return generateCacheKey(request, targetMethod, prefixKey,paramFunctionKey());
+    }
+
     @Override
-    public void putCacheResult(Request request, Response result, Object targetObject, Method targetMethod, SimpleCache simpleCache) {
-        cacheProcessorAbstract.putCacheResult(request,result,targetObject,targetMethod,simpleCache);
+    public void putCacheResult(Request request, Response result, Object targetObject, Method targetMethod, SimpleCache annotation) {
+        String key = generateKey(request, annotation, targetMethod);
+        cacheProcessorAbstract.publishJob(request,result,targetObject,targetMethod,annotation,key);
     }
 
 
@@ -97,8 +104,27 @@ public class SimpleCacheInitialProcessor<Request,Response> extends CacheInitialP
 
     @Override
     public String initialKey() {
-        return cacheProcessorAbstract.generateCacheKey(request,method,cacheInitial.prefixKey());
+        Function<Request,String> paramFunctionKey = paramFunctionKey();
+        return generateCacheKey(paramFunctionKey);
     }
+
+
+    /**
+     * 定义参数生成的key
+     * @return
+     */
+    public Function<Request, String> paramFunctionKey() {
+        return null;
+    }
+
+    public String generateCacheKey(Function<Request,String> paramFunctionKey){
+        return cacheProcessorAbstract.generateCacheKey(request,method,cacheInitial.prefixKey(),paramFunctionKey);
+    }
+
+    public String generateCacheKey(Request request, Method targetMethod, String prefixKey, Function<Request,String> paramFunctionKey){
+        return cacheProcessorAbstract.generateCacheKey(request,targetMethod,prefixKey,paramFunctionKey);
+    }
+
 
 
     /**
@@ -107,14 +133,12 @@ public class SimpleCacheInitialProcessor<Request,Response> extends CacheInitialP
     @Override
     public void saveToCache(Request request,Response result,long time,TimeUnit timeUnit,
                             Method targetMethod,String prefix) {
-        String cacheKey = cacheProcessorAbstract.generateCacheKey(request,targetMethod,prefix);
-        redisTemplate.opsForValue().set(cacheKey,result,time,timeUnit);
+        redisTemplate.opsForValue().set(key,result,time,timeUnit);
     }
 
     @Override
     public void deleteCache(Request request,Method targetMethod,String prefix) {
-        String cacheKey = cacheProcessorAbstract.generateCacheKey(request,targetMethod,prefix);
-        redisTemplate.delete(cacheKey);
+        redisTemplate.delete(key);
     }
 
     /**
