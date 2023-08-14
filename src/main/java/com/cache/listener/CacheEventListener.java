@@ -83,10 +83,10 @@ public class CacheEventListener {
                 refreshTask.add(refreshCache);
                 ScheduledFuture<?> scheduledFuture = cacheScheduler.scheduleAtFixedRate(() -> {
                     try {
-                        log.debug("开始刷新,任务名称为:{}", refreshCache.getRefreshKey());
+//                        log.debug("开始刷新,任务名称为:{}", refreshCache.getRefreshKey());
                         refreshCache.refresh();
                     } catch (Exception e) {
-                        log.error("刷新失败", e);
+                        log.error("刷新失败,任务名称为:{}",refreshCache.getRefreshKey(), e);
                         removeRefreshTask(refreshCache);
                     }
 
@@ -99,9 +99,10 @@ public class CacheEventListener {
                 refreshTask.add(refreshCache);
                 ScheduledFuture<?> scheduledFuture = cacheScheduler.schedule(() -> {
                     try {
-                        log.debug("开始刷新,任务名称为:{}", refreshCache.getRefreshKey());
+//                        log.debug("开始刷新,任务名称为:{}", refreshCache.getRefreshKey());
                         refreshCache.refresh();
                     } catch (Exception e) {
+                        log.error("刷新失败,任务名称为:{}",refreshCache.getRefreshKey(), e);
                         removeRefreshTask(refreshCache);
                     }
                 }, new CronTrigger(refreshCache.getCron()));
@@ -119,6 +120,11 @@ public class CacheEventListener {
         log.debug("开始清理缓存任务");
         Collection<RefreshCache> refreshCacheList = refreshCacheMap.values();
         log.debug("缓存任务数量:{},正在执行的任务:{}",refreshCacheList.size(),refreshTask.size());
+        if (log.isTraceEnabled()) {
+            for (RefreshCache refreshCache : refreshCacheList) {
+                log.trace("任务名称为:{}",refreshCache.getRefreshKey());
+            }
+        }
         //按规则清除任务
         removeRefreshCache();
         log.debug("清理缓存任务结束");

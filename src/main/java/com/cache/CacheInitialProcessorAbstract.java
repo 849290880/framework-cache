@@ -3,10 +3,13 @@ package com.cache;
 import com.cache.annotation.CacheInitial;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
-import org.springframework.scheduling.support.CronTrigger;
+import org.springframework.util.CollectionUtils;
 
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public abstract class CacheInitialProcessorAbstract<Request,Response> implements CacheInitialProcessor<Request,Response>,CacheProcessor<Request,Response>{
@@ -22,9 +25,11 @@ public abstract class CacheInitialProcessorAbstract<Request,Response> implements
 
     protected volatile boolean initFlag;
 
-    protected Request request;
+//    protected Request request;
+    protected List<Request> requestList;
 
-    protected String key;
+    protected Map<String,Request> cacheKeyRequestMap;
+
 
     protected EventPublisher eventPublisher;
 
@@ -38,13 +43,34 @@ public abstract class CacheInitialProcessorAbstract<Request,Response> implements
 
     @Override
     public void init() {
-        this.request = initialRequestParam();
-        this.key = initialKey();
+        this.requestList = initRequest();
+        this.cacheKeyRequestMap = initialCacheKeyMap(requestList);
     }
 
-    public abstract Request initialRequestParam();
+    public abstract List<Request> initialRequestParam();
 
-    public abstract String initialKey();
+    public List<Request> initRequest(){
+        List<Request> requests = new ArrayList<>();
+        List<Request> customRequest = initialRequestParam();
+        if(customRequest != null){
+            requests.addAll(customRequest);
+        }
+        return requests;
+    }
+
+    public abstract String initialKey(Request request);
+
+    public Map<String,Request> initialCacheKeyMap(List<Request> requestList){
+        Map<String,Request> cacheKeyMap = new HashMap<>();
+        if(CollectionUtils.isEmpty(requestList)){
+            return cacheKeyMap;
+        }
+        for (Request request : requestList) {
+            String cacheKey = initialKey(request);
+            cacheKeyMap.put(cacheKey,request);
+        }
+        return cacheKeyMap;
+    }
 
     @Override
     public void removeCache(String key) {
@@ -93,14 +119,17 @@ public abstract class CacheInitialProcessorAbstract<Request,Response> implements
     @Override
     public void refresh() {
 
-        //发布定时缓存任务
-        RefreshCache refreshCache = new RefreshCache(method, bean, request,
-                key, this,
-                cacheInitial.cron(),(int)cacheInitial.fixTime(),
-                System.currentTimeMillis(), cacheInitial.cacheTime(),cacheInitial.timeUnit(),cacheInitial.ttlTime());
+        for (Request request : this.requestList) {
+            String key = initialKey(request);
+            //发布定时缓存任务
+            RefreshCache refreshCache = new RefreshCache(method, bean, request,
+                    key, this,
+                    cacheInitial.cron(),(int)cacheInitial.fixTime(),
+                    System.currentTimeMillis(), cacheInitial.cacheTime(),cacheInitial.timeUnit(),cacheInitial.ttlTime());
 
-        //发布缓存刷新任务
-        eventPublisher.publishAddJobEvent(refreshCache,key);
+            //发布缓存刷新任务
+            eventPublisher.publishAddJobEvent(refreshCache,key);
+        }
 
     }
 

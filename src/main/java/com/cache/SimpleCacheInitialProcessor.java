@@ -4,8 +4,10 @@ import com.cache.annotation.SimpleCache;
 import org.springframework.data.redis.core.RedisTemplate;
 
 import java.lang.reflect.Method;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * 使用组合的方法将两个注解的功能融合一起 @CacheInitial @SimpleCache
@@ -24,8 +26,8 @@ public class SimpleCacheInitialProcessor<Request,Response> extends CacheInitialP
     public void init() {
         this.cacheProcessorAbstract.buildCacheProvide(this.redisTemplate);
         this.cacheProcessorAbstract.buildEventPublisher(eventPublisher);
-        this.request = initialRequestParam();
-        this.key = initialKey();
+        this.requestList = initialRequestParam();
+        this.cacheKeyRequestMap = initialCacheKeyMap(requestList);
     }
 
     @Override
@@ -48,7 +50,19 @@ public class SimpleCacheInitialProcessor<Request,Response> extends CacheInitialP
     @Override
     public void putCacheResult(Request request, Response result, Object targetObject, Method targetMethod, SimpleCache annotation) {
         String key = generateKey(request, annotation, targetMethod);
+        //只缓存某一个些参数,或者除了某些参数都缓存
+        Predicate<Request> requestPredicate = onlyParamKeyByRequestToCache();
+        if (requestPredicate != null) {
+            if (onlyParamKeyByRequestToCache(request, requestPredicate)) {
+                cacheProcessorAbstract.publishJob(request,result,targetObject,targetMethod,annotation,key);
+            }
+            return;
+        }
         cacheProcessorAbstract.publishJob(request,result,targetObject,targetMethod,annotation,key);
+    }
+
+    public Predicate<Request> onlyParamKeyByRequestToCache(){
+        return null;
     }
 
 
@@ -93,19 +107,24 @@ public class SimpleCacheInitialProcessor<Request,Response> extends CacheInitialP
         return cacheProcessorAbstract.paramKeyByRequest(request);
     }
 
+    @Override
+    public boolean onlyParamKeyByRequestToCache(Request request, Predicate<Request> predicate) {
+        return cacheProcessorAbstract.onlyParamKeyByRequestToCache(request,predicate);
+    }
+
 
     /**
      * 初始化缓存的时候,调用方法时的参数
      */
     @Override
-    public Request initialRequestParam() {
+    public List<Request> initialRequestParam() {
         return null;
     }
 
     @Override
-    public String initialKey() {
+    public String initialKey(Request request) {
         Function<Request,Request> paramFunctionKey = paramFunctionKey();
-        return generateCacheKey(paramFunctionKey);
+        return generateCacheKey(request,paramFunctionKey);
     }
 
 
@@ -117,7 +136,7 @@ public class SimpleCacheInitialProcessor<Request,Response> extends CacheInitialP
         return null;
     }
 
-    public String generateCacheKey(Function<Request,Request> paramFunctionKey){
+    public String generateCacheKey(Request request,Function<Request,Request> paramFunctionKey){
         return cacheProcessorAbstract.generateCacheKey(request,method,cacheInitial.prefixKey(),paramFunctionKey);
     }
 
@@ -133,12 +152,12 @@ public class SimpleCacheInitialProcessor<Request,Response> extends CacheInitialP
     @Override
     public void saveToCache(Request request,Response result,long time,TimeUnit timeUnit,
                             Method targetMethod,String prefix) {
-        redisTemplate.opsForValue().set(key,result,time,timeUnit);
+        redisTemplate.opsForValue().set(initialKey(request),result,time,timeUnit);
     }
 
     @Override
     public void deleteCache(Request request,Method targetMethod,String prefix) {
-        redisTemplate.delete(key);
+        redisTemplate.delete(initialKey(request));
     }
 
     /**

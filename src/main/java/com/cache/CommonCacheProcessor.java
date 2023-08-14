@@ -1,12 +1,15 @@
 package com.cache;
 
+import cn.hutool.core.util.ReflectUtil;
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.serializer.PropertyFilter;
 import com.cache.annotation.SimpleCache;
 import org.springframework.util.StringUtils;
 
 import java.lang.reflect.Method;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 public class CommonCacheProcessor<Request,Response> extends CacheProcessorAbstract<Request,Response>{
 
@@ -31,6 +34,14 @@ public class CommonCacheProcessor<Request,Response> extends CacheProcessorAbstra
     @Override
     public void putCacheResult(Request request, Response result, Object targetObject, Method targetMethod, SimpleCache annotation) {
         String key = generateKey(request, annotation, targetMethod);
+        //只缓存某一个些参数,或者除了某些参数都缓存
+        Predicate<Request> requestPredicate = onlyParamKeyByRequestToCache();
+        if (requestPredicate != null) {
+            if (onlyParamKeyByRequestToCache(request, requestPredicate)) {
+                publishJob(request,result,targetObject,targetMethod,annotation,key);
+                return;
+            }
+        }
         publishJob(request,result,targetObject,targetMethod,annotation,key);
     }
 
@@ -89,22 +100,53 @@ public class CommonCacheProcessor<Request,Response> extends CacheProcessorAbstra
         //替换 : 为特殊符号
         String easyReadRedisData = null;
         if(paramFunctionKey != null){
-            Request changeRequest = paramFunctionKey.apply(request);
+            Request originalRequest = (Request)DeepCopy.copy(request);
+            Request changeRequest = paramFunctionKey.apply(originalRequest);
             easyReadRedisData = paramKeyByRequest(changeRequest);
         }else {
             easyReadRedisData = paramKeyByRequest(request);
         }
-        String jsonString = targetMethod.getDeclaringClass() + "." +targetMethod.getName() + "#" + easyReadRedisData;
+//        String jsonString = targetMethod.getDeclaringClass() + "." +targetMethod.getName() + "#" + easyReadRedisData;
+        String jsonString = getAbbreviatedName(targetMethod) + ":" + easyReadRedisData;
         if(StringUtils.isEmpty(jsonString)){
             throw new IllegalArgumentException("缓存参数错误");
         }
         return jsonString;
     }
 
+    public static String getAbbreviatedName(Method method) {
+        String fullName = method.getDeclaringClass().getName();
+        String methodName = method.getName();
+        String[] nameParts = fullName.split("\\.");
+
+        // Build the abbreviated name
+        StringBuilder abbreviatedName = new StringBuilder();
+        for (int i = 0; i < nameParts.length - 1; i++) {
+            abbreviatedName.append(nameParts[i].charAt(0)).append(".");
+        }
+        abbreviatedName.append(nameParts[nameParts.length - 1]);
+
+        return abbreviatedName + ":" + methodName;
+    }
+
+
     @Override
     public String paramKeyByRequest(Request request) {
-        String requestString = JSON.toJSONString(request);
+        //空字符串不作为参数
+        PropertyFilter filter = (source, name, value) -> !(value instanceof String) ||
+                !((String) value).isEmpty();
+
+        String requestString = JSON.toJSONString(request,filter);
         return requestString.replace(":", "$");
+    }
+
+    @Override
+    public boolean onlyParamKeyByRequestToCache(Request request, Predicate<Request> predicate) {
+        return predicate.test(request);
+    }
+
+    public Predicate<Request> onlyParamKeyByRequestToCache(){
+        return null;
     }
 
 
